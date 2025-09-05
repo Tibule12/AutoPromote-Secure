@@ -63,6 +63,8 @@ const corsOptions = {
     'http://localhost:3002',
     'https://autopromote-app.vercel.app', // Add your deployed frontend URL when available
     'https://tibule12.github.io', // Allow GitHub Pages frontend
+    'https://tibule12.github.io/AutoPromote-Secure', // Explicit path for GitHub Pages frontend
+    'https://autopromote.onrender.com', // Render backend URL
     process.env.FRONTEND_URL // Allow dynamic frontend URL from environment
   ].filter(Boolean), // Remove any undefined values
   credentials: true,
@@ -74,8 +76,17 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
+
+// Add a CORS preflight handler for development mode
+if (process.env.NODE_ENV !== 'production') {
+  app.options('*', cors()); // Enable preflight for all routes in development
+}
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Static file serving for public directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -91,38 +102,40 @@ app.use('/api/withdrawals', withdrawalRoutes);
 app.use('/api/monetization', monetizationRoutes);
 app.use('/api/stripe', stripeOnboardRoutes);
 
+// For HTML routes, we'll still define explicit routes to handle fallbacks
+// when files don't exist, but they'll be served by express.static if they exist
 
-// Static file serving is disabled for API-only deployment on Render
-// app.use(express.static(path.join(__dirname, 'frontend/build')));
-
-// Serve the admin test HTML file
+// Explicit routes for admin pages with fallbacks
 app.get('/admin-test', (req, res) => {
-  // Check if file exists before sending
-  try {
-    res.sendFile(path.join(__dirname, 'public', 'admin-test.html'));
-  } catch (error) {
-    res.send('<html><body><h1>Admin Test Page</h1><p>The actual test page is not available.</p></body></html>');
-  }
+  res.sendFile(path.join(__dirname, 'public', 'admin-test.html'), (err) => {
+    if (err) {
+      res.send('<html><body><h1>Admin Test Page</h1><p>The actual test page is not available.</p></body></html>');
+    }
+  });
 });
 
-// Serve the admin login page (only accessible by direct URL - not linked from UI)
 app.get('/admin-login', (req, res) => {
-  // Check if file exists before sending
-  try {
-    res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
-  } catch (error) {
-    res.send('<html><body><h1>Admin Login</h1><p>The actual login page is not available.</p></body></html>');
-  }
+  res.sendFile(path.join(__dirname, 'public', 'admin-login.html'), (err) => {
+    if (err) {
+      res.send('<html><body><h1>Admin Login</h1><p>The actual login page is not available.</p></body></html>');
+    }
+  });
 });
 
-// Serve the admin dashboard (protected in frontend by auth check)
 app.get('/admin-dashboard', (req, res) => {
-  // Check if file exists before sending
-  try {
-    res.sendFile(path.join(__dirname, 'frontend/build', 'index.html'));
-  } catch (error) {
-    res.send('<html><body><h1>Admin Dashboard</h1><p>The actual dashboard is not available.</p></body></html>');
-  }
+  res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'), (err) => {
+    if (err) {
+      res.send('<html><body><h1>Admin Dashboard</h1><p>The actual dashboard is not available.</p></body></html>');
+    }
+  });
+});
+
+app.get('/test-upload', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'test-upload.html'), (err) => {
+    if (err) {
+      res.send('<html><body><h1>Content Upload Test</h1><p>The test page is not available.</p></body></html>');
+    }
+  });
 });
 
 // Health check endpoint
@@ -130,7 +143,50 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     message: 'AutoPromote Server is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// API endpoints discovery
+app.get('/api/endpoints', (req, res) => {
+  // Collect all registered routes
+  const routes = [];
+  
+  app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+      // Routes registered directly on the app
+      routes.push({
+        path: middleware.route.path,
+        method: Object.keys(middleware.route.methods)[0].toUpperCase()
+      });
+    } else if (middleware.name === 'router') {
+      // Routes registered on a router
+      middleware.handle.stack.forEach((handler) => {
+        if (handler.route) {
+          const path = handler.route.path;
+          const method = Object.keys(handler.route.methods)[0].toUpperCase();
+          const fullPath = middleware.regexp.toString().includes('/api/') 
+            ? path.startsWith('/') 
+              ? path 
+              : `/${path}`
+            : `/api${path.startsWith('/') ? path : `/${path}`}`;
+          
+          routes.push({
+            path: fullPath,
+            method: method
+          });
+        }
+      });
+    }
+  });
+  
+  // Sort routes by path
+  routes.sort((a, b) => a.path.localeCompare(b.path));
+  
+  res.json({
+    total: routes.length,
+    endpoints: routes
   });
 });
 

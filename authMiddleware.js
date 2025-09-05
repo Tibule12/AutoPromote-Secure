@@ -1,4 +1,5 @@
 const { auth, db } = require('./firebaseAdmin');
+const jwt = require('jsonwebtoken');
 
 const authMiddleware = async (req, res, next) => {
   try {
@@ -22,13 +23,40 @@ const authMiddleware = async (req, res, next) => {
     }
 
     // Verify Firebase token
-    const decodedToken = await auth.verifyIdToken(token);
-    console.log('Token verification successful, decoded:', JSON.stringify({
-      uid: decodedToken.uid,
-      email: decodedToken.email,
-      admin: decodedToken.admin,
-      role: decodedToken.role
-    }, null, 2));
+    let decodedToken;
+    let isCustomToken = false;
+
+    try {
+      decodedToken = await auth.verifyIdToken(token);
+      console.log('Token verification successful, decoded:', JSON.stringify({
+        uid: decodedToken.uid,
+        email: decodedToken.email,
+        admin: decodedToken.admin,
+        role: decodedToken.role
+      }, null, 2));
+    } catch (verifyError) {
+      // Check if it's a custom token error
+      if (verifyError.message && verifyError.message.includes('custom token')) {
+        console.log('Detected custom token, decoding...');
+        isCustomToken = true;
+        const decoded = jwt.decode(token);
+        if (!decoded || !decoded.uid) {
+          console.log('Invalid custom token format');
+          return res.status(401).json({ error: 'Invalid custom token' });
+        }
+        decodedToken = {
+          uid: decoded.uid,
+          email: decoded.email || null,
+          name: decoded.name || null,
+          admin: decoded.admin || false,
+          role: decoded.role || 'user'
+        };
+        console.log('Custom token decoded, uid:', decodedToken.uid);
+      } else {
+        // Re-throw other errors
+        throw verifyError;
+      }
+    }
     
     // Extract any custom claims
     const isAdminFromClaims = decodedToken.admin === true;
@@ -63,6 +91,11 @@ const authMiddleware = async (req, res, next) => {
       }
       
       if (!userData) {
+        // For custom tokens, user document should exist from login
+        if (isCustomToken) {
+          console.log('Custom token but no user document found - this should not happen');
+          return res.status(401).json({ error: 'User data not found' });
+        }
         // Create a basic user document if it doesn't exist
         console.log('No user document found in Firestore, creating one...');
         const basicUserData = {
