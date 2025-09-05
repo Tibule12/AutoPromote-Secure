@@ -32,20 +32,20 @@
       const password = form.password.value;
 
       try {
-        // Call login endpoint with email/password
-        const response = await api.login({ email, password });
-        if (response.ok) {
-          const data = response.data;
-          if (data.user.isAdmin) {
+        // Call adminLogin endpoint with email/password
+        const response = await api.adminLogin(email, password);
+        if (response.token) {
+          const data = response.user;
+          if (data.isAdmin) {
             // Store token and redirect to admin dashboard
-            localStorage.setItem('authToken', data.token);
-            localStorage.setItem('userData', JSON.stringify(data.user));
+            localStorage.setItem('authToken', response.token);
+            localStorage.setItem('userData', JSON.stringify(data));
             window.location.href = '/admin-dashboard';
           } else {
             errorMessage.textContent = 'You are not authorized as admin.';
           }
         } else {
-          errorMessage.textContent = response.error || 'Login failed.';
+          errorMessage.textContent = 'Login failed.';
         }
       } catch (error) {
         errorMessage.textContent = 'An error occurred during login.';
