@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Login - AutoPromote</title>
+  <link rel="stylesheet" href="static/css/main.786ea103.css" />
+</head>
+<body>
+  <div class="login-container">
+    <h1>Admin Login</h1>
+    <form id="admin-login-form">
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required />
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" required />
+      <button type="submit">Login</button>
+    </form>
+    <div id="error-message" class="error-message"></div>
+  </div>
+
+  <script src="public/js/api-client.js"></script>
+  <script>
+    const form = document.getElementById('admin-login-form');
+    const errorMessage = document.getElementById('error-message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorMessage.textContent = '';
+
+      const email = form.email.value;
+      const password = form.password.value;
+
+      try {
+        // Call login endpoint with email/password
+        const response = await api.login({ email, password });
+        if (response.ok) {
+          const data = response.data;
+          if (data.user.isAdmin) {
+            // Store token and redirect to admin dashboard
+            localStorage.setItem('authToken', data.token);
+            localStorage.setItem('userData', JSON.stringify(data.user));
+            window.location.href = '/admin-dashboard';
+          } else {
+            errorMessage.textContent = 'You are not authorized as admin.';
+          }
+        } else {
+          errorMessage.textContent = response.error || 'Login failed.';
+        }
+      } catch (error) {
+        errorMessage.textContent = 'An error occurred during login.';
+        console.error('Admin login error:', error);
+      }
+    });
+  </script>
+</body>
+</html>
