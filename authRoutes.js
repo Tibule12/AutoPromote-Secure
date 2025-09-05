@@ -225,91 +225,61 @@ router.post('/admin-login', async (req, res) => {
     let isAdmin = false;
     let fromCollection = null;
     
-    // For admin login, check admin claims in token first, then try admins collection
+    // For admin login, check Firestore for admin status
     try {
-      console.log('Checking admin claims in token:', decodedToken.admin, decodedToken.role);
-      console.log('Admin email from token:', decodedToken.email);
+      console.log('Checking Firestore for admin status, user:', decodedToken.uid, decodedToken.email);
 
-      // Check if user has admin claims in the token
-      if (decodedToken.admin === true || decodedToken.role === 'admin') {
-        console.log('User has admin claims in token');
+      // Check if user exists in admins collection
+      const adminDoc = await admin.firestore().collection('admins').doc(decodedToken.uid).get();
 
-        // Try to get admin data from admins collection if it exists
+      if (adminDoc.exists) {
+        console.log('User found in admins collection');
+        userData = adminDoc.data();
+        fromCollection = 'admins';
+        role = 'admin';
+        isAdmin = true;
+
+        // Update lastLogin in admin document
+        await admin.firestore().collection('admins').doc(decodedToken.uid).update({
+          lastLogin: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Log the admin login to admin_logs collection for audit (optional)
         try {
-          const adminDoc = await admin.firestore().collection('admins').doc(decodedToken.uid).get();
-
-          if (adminDoc.exists) {
-            console.log('User found in admins collection');
-            userData = adminDoc.data();
-            fromCollection = 'admins';
-
-            // Update lastLogin in admin document
-            await admin.firestore().collection('admins').doc(decodedToken.uid).update({
-              lastLogin: admin.firestore.FieldValue.serverTimestamp()
-            });
-          } else {
-            console.log('Admin not in admins collection, using token claims');
-            // Create admin document if it doesn't exist
-            userData = {
-              email: decodedToken.email,
-              name: decodedToken.name || decodedToken.email.split('@')[0],
-              role: 'admin',
-              isAdmin: true
-            };
-            fromCollection = 'token_claims';
-
-            // Try to create admin document (don't fail if Firestore is not available)
-            try {
-              await admin.firestore().collection('admins').doc(decodedToken.uid).set({
-                email: decodedToken.email,
-                name: decodedToken.name || decodedToken.email.split('@')[0],
-                role: 'admin',
-                isAdmin: true,
-                createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                lastLogin: admin.firestore.FieldValue.serverTimestamp()
-              });
-              console.log('Created admin document in Firestore');
-            } catch (createError) {
-              console.log('Could not create admin document (Firestore may not be available):', createError.message);
-            }
-          }
-
-          role = 'admin';
-          isAdmin = true;
-
-          // Log the admin login to admin_logs collection for audit (optional)
-          try {
-            await admin.firestore().collection('admin_logs').add({
-              action: 'admin_login',
-              adminId: decodedToken.uid,
-              email: decodedToken.email,
-              timestamp: admin.firestore.FieldValue.serverTimestamp(),
-              ipAddress: req.ip || 'unknown'
-            });
-          } catch (logError) {
-            console.log('Could not log admin login (Firestore may not be available):', logError.message);
-          }
-
-        } catch (firestoreError) {
-          console.log('Error with Firestore, but proceeding with token claims:', firestoreError.message);
-          // Use token claims as fallback
-          userData = {
+          await admin.firestore().collection('admin_logs').add({
+            action: 'admin_login',
+            adminId: decodedToken.uid,
             email: decodedToken.email,
-            name: decodedToken.name || decodedToken.email.split('@')[0],
-            role: 'admin',
-            isAdmin: true
-          };
-          role = 'admin';
-          isAdmin = true;
-          fromCollection = 'token_claims';
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            ipAddress: req.ip || 'unknown'
+          });
+        } catch (logError) {
+          console.log('Could not log admin login (Firestore may not be available):', logError.message);
         }
       } else {
-        // User does not have admin claims
-        console.log('User does not have admin claims in token');
-        return res.status(403).json({ error: 'Not authorized as admin' });
+        // Check if user exists in regular users collection with admin role
+        console.log('User not in admins collection, checking users collection');
+        const userDoc = await admin.firestore().collection('users').doc(decodedToken.uid).get();
+
+        if (userDoc.exists) {
+          const userDataFromUsers = userDoc.data();
+          if (userDataFromUsers.isAdmin === true || userDataFromUsers.role === 'admin') {
+            console.log('User found in users collection with admin role');
+            userData = userDataFromUsers;
+            fromCollection = 'users';
+            role = 'admin';
+            isAdmin = true;
+          } else {
+            console.log('User found in users collection but not admin');
+            return res.status(403).json({ error: 'Not authorized as admin' });
+          }
+        } else {
+          console.log('User not found in any collection');
+          return res.status(403).json({ error: 'Not authorized as admin' });
+        }
       }
-    } catch (error) {
-      console.log('Error during admin authentication:', error);
+    } catch (firestoreError) {
+      console.log('Error with Firestore during admin check:', firestoreError.message);
       return res.status(500).json({ error: 'Admin authentication error' });
     }
     
