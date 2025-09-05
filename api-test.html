@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoPromote API Test</title>
+    <link href="/AutoPromote-Secure/static/css/main.786ea103.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        #result {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+    </style>
+</head>
+<body>
+    <h1>AutoPromote API Test</h1>
+    <div class="card">
+        <h2>API Status Check</h2>
+        <p>This page tests the connection to your AutoPromote backend API.</p>
+        <button id="testApiBtn" class="button">Test API Connection</button>
+        <div id="apiStatus"></div>
+    </div>
+    
+    <div class="card">
+        <h2>API Endpoints</h2>
+        <button id="getEndpointsBtn" class="button">List Available Endpoints</button>
+    </div>
+    
+    <div id="result"></div>
+
+    <script>
+        // API Configuration
+        const API_CONFIG = {
+            // For local development
+            LOCAL: {
+                API_URL: 'http://localhost:5000/api',
+                AUTH_URL: 'http://localhost:5000/auth'
+            },
+            
+            // For production - Update this URL once Render deployment is complete
+            PRODUCTION: {
+                API_URL: 'https://autopromote-api.onrender.com/api',
+                AUTH_URL: 'https://autopromote-api.onrender.com/auth'
+            },
+            
+            // Get the appropriate configuration based on environment
+            get: function() {
+                // Check if we're running on GitHub Pages
+                const isGitHubPages = window.location.hostname.includes('github.io');
+                
+                if (isGitHubPages) {
+                    return this.PRODUCTION;
+                } else {
+                    return this.LOCAL;
+                }
+            }
+        };
+
+        const { API_URL, AUTH_URL } = API_CONFIG.get();
+        
+        // Test API Connection
+        document.getElementById('testApiBtn').addEventListener('click', async () => {
+            const resultElement = document.getElementById('result');
+            const statusElement = document.getElementById('apiStatus');
+            
+            resultElement.textContent = 'Testing API connection...';
+            statusElement.textContent = '';
+            
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                
+                resultElement.textContent = JSON.stringify(data, null, 2);
+                
+                if (response.ok) {
+                    statusElement.innerHTML = '<div class="status success">✅ API is online</div>';
+                } else {
+                    statusElement.innerHTML = '<div class="status error">❌ API returned an error</div>';
+                }
+            } catch (error) {
+                resultElement.textContent = `Error: ${error.message}`;
+                statusElement.innerHTML = '<div class="status error">❌ Cannot connect to API</div>';
+            }
+        });
+
+        // List Available Endpoints
+        document.getElementById('getEndpointsBtn').addEventListener('click', async () => {
+            const resultElement = document.getElementById('result');
+            
+            resultElement.textContent = 'Fetching available endpoints...';
+            
+            try {
+                const response = await fetch(`${API_URL}/endpoints`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultElement.textContent = JSON.stringify(data, null, 2);
+                } else {
+                    resultElement.textContent = `Error: Server returned ${response.status} ${response.statusText}`;
+                }
+            } catch (error) {
+                resultElement.textContent = `Error: ${error.message}`;
+            }
+        });
+
+        // Display current configuration
+        document.addEventListener('DOMContentLoaded', () => {
+            const resultElement = document.getElementById('result');
+            resultElement.textContent = `Current API Configuration:\nAPI URL: ${API_URL}\nAUTH URL: ${AUTH_URL}`;
+        });
+    </script>
+</body>
+</html>
