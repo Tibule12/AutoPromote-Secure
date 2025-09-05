@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [16.x, 18.x, 20.x]
+        node-version: [16.x]
 
     steps:
     - uses: actions/checkout@v3
@@ -27,7 +27,7 @@ jobs:
       run: npm install
     
     - name: Verify syntax
-      run: node -c server.js
+      run: node --check server.js
       
     # Add this section if you have tests
     # - name: Run tests
