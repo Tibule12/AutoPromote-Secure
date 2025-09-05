@@ -2,6 +2,9 @@ const { db } = require('./firebaseAdmin');
 
 // Content validation middleware
 const validateContentData = (req, res, next) => {
+  console.log('=== VALIDATION MIDDLEWARE START ===');
+  console.log('Request body for validation:', JSON.stringify(req.body, null, 2));
+
   const {
     title,
     type,
@@ -14,6 +17,17 @@ const validateContentData = (req, res, next) => {
     min_views_threshold,
     max_budget
   } = req.body;
+
+  console.log('Extracted fields:', {
+    title: typeof title,
+    type: typeof type,
+    url: typeof url,
+    description: typeof description,
+    target_platforms: typeof target_platforms,
+    scheduled_promotion_time: typeof scheduled_promotion_time,
+    promotion_frequency: typeof promotion_frequency,
+    max_budget: typeof max_budget
+  });
 
   const errors = [];
 
@@ -93,12 +107,15 @@ const validateContentData = (req, res, next) => {
   }
 
   if (errors.length > 0) {
+    console.log('=== VALIDATION FAILED ===');
+    console.log('Validation errors:', errors);
     return res.status(400).json({
       error: 'Validation failed',
       details: errors
     });
   }
 
+  console.log('=== VALIDATION PASSED ===');
   next();
 };
 
