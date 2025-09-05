@@ -45,13 +45,28 @@ const validateContentData = (req, res, next) => {
     }
   }
 
-  if (!url || typeof url !== 'string') {
-    errors.push('URL is required and must be a string');
-  } else {
-    try {
-      new URL(url);
-    } catch (error) {
-      errors.push('Invalid URL format');
+  // URL validation - make it conditional based on content type
+  if (type === 'article') {
+    // For articles, URL is required
+    if (!url || typeof url !== 'string') {
+      errors.push('URL is required for article content and must be a string');
+    } else {
+      try {
+        new URL(url);
+      } catch (error) {
+        errors.push('Invalid URL format');
+      }
+    }
+  } else if (url !== undefined) {
+    // For other content types, URL is optional but if provided must be valid
+    if (typeof url !== 'string') {
+      errors.push('URL must be a string if provided');
+    } else {
+      try {
+        new URL(url);
+      } catch (error) {
+        errors.push('Invalid URL format');
+      }
     }
   }
 
