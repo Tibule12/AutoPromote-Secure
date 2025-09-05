@@ -9,8 +9,8 @@ const API_CONFIG = {
   
   // For production - Updated with actual Render deployment URL
   PRODUCTION: {
-    API_URL: 'https://autopromote-api.onrender.com/api',
-    AUTH_URL: 'https://autopromote-api.onrender.com/auth'
+    API_URL: 'https://autopromote.onrender.com/api',
+    AUTH_URL: 'https://autopromote.onrender.com/api/auth'
   },
   
   // Get the appropriate configuration based on environment
