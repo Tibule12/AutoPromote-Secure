@@ -1,31 +1,14 @@
-# AutoPromote-Secure Documentation
+# AutoPromote Documentation
 
 ## Overview
-AutoPromote-Secure is an enhanced version of the AutoPromote system with improved security features, focusing on secure Firebase Admin SDK integration and robust authentication.
+AutoPromote is an automated content promotion system with a Node.js/Express backend and Firebase integration for authentication and database services.
 
 ## Features
-- Secure Firebase Admin SDK integration
-- Enhanced authentication flow
-- Improved content promotion security
-- Admin role-based access control
-- Secure API endpoints
-
-## Security Enhancements
-
-### Firebase Admin Configuration
-- Secure storage of Firebase credentials
-- Environment variable management
-- Custom token generation and validation
-
-### Authentication
-- Enhanced JWT verification
-- Role-based access control
-- Admin credential validation
-
-### API Security
-- Request validation middleware
-- Input sanitization
-- Cross-Origin Resource Sharing (CORS) configuration
+- Automated content promotion based on performance metrics
+- A/B testing capabilities
+- Analytics tracking and reporting
+- Admin dashboard for content management
+- User authentication via Firebase
 
 ## API Endpoints
 
@@ -33,15 +16,22 @@ AutoPromote-Secure is an enhanced version of the AutoPromote system with improve
 - `GET /api/health` - Check if the API is running
 
 ### Content Endpoints
-- `GET /api/content` - List all content (authenticated)
-- `POST /api/content` - Create new content (authenticated)
-- `GET /api/content/:id` - Get specific content (authenticated)
-- `PUT /api/content/:id` - Update content (authenticated admin)
-- `DELETE /api/content/:id` - Delete content (authenticated admin)
+- `GET /api/content` - List all content
+- `POST /api/content` - Create new content
+- `GET /api/content/:id` - Get specific content
+- `PUT /api/content/:id` - Update content
+- `DELETE /api/content/:id` - Delete content
+
+### Analytics Endpoints
+- `GET /api/analytics` - Get analytics data
+- `POST /api/analytics/track` - Track a new analytics event
 
 ### Admin Endpoints
-- `GET /api/admin/dashboard` - Get admin dashboard data (admin only)
-- `POST /api/admin/promote` - Manually promote content (admin only)
+- `GET /api/admin/dashboard` - Get admin dashboard data
+- `POST /api/admin/promote` - Manually promote content
+
+## Authentication
+The API uses Firebase Authentication. All requests except for the health check require a valid authentication token.
 
 ## Deployment
-The application is deployed on Render with secure environment configuration.
+The application is deployed on Render with continuous deployment from the GitHub repository.
