@@ -299,11 +299,11 @@ router.post('/upload', authMiddleware, upload.single('file'), sanitizeInput, val
           details: uploadError.message
         });
       }
-    } else if (!url && type !== 'article') {
+    } else if (!req.file && !url && type !== 'article') {
       // For non-article content, either file or URL must be provided
       return res.status(400).json({
-        error: 'File upload required',
-        message: 'For video, image, and audio content, you must either upload a file or provide a URL'
+        error: 'File or URL required',
+        message: 'For video, image, and audio content, you must either upload a file or provide a URL.'
       });
     }
 
