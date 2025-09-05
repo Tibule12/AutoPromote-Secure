@@ -19,8 +19,29 @@
     <div id="error-message" class="error-message"></div>
   </div>
 
-  <script src="public/js/api-client.js"></script>
+  <!-- Firebase App (the core Firebase SDK) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <!-- Firebase Auth -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <!-- Auth Helper -->
+  <script src="/js/auth-helper.js"></script>
+  <!-- API Client -->
+  <script src="/js/api-client.js"></script>
+
   <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCyNu9ko3m6D-gqtKi_9xC2YLJBG2kJR6w",
+      authDomain: "autopromote-464de.firebaseapp.com",
+      projectId: "autopromote-464de",
+      storageBucket: "autopromote-464de.appspot.com",
+      messagingSenderId: "211790011547",
+      appId: "1:211790011547:web:adce3dc4f11dca3e38af5c"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+
     const form = document.getElementById('admin-login-form');
     const errorMessage = document.getElementById('error-message');
 
