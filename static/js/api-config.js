@@ -7,7 +7,7 @@ const API_CONFIG = {
     AUTH_URL: 'http://localhost:5000/auth'
   },
   
-  // For production - Update this URL once Render deployment is complete
+  // For production - Updated with actual Render deployment URL
   PRODUCTION: {
     API_URL: 'https://autopromote-api.onrender.com/api',
     AUTH_URL: 'https://autopromote-api.onrender.com/auth'
