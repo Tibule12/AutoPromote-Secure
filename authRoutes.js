@@ -330,6 +330,18 @@ router.get('/verify', async (req, res) => {
     if (decodedToken.admin === true || decodedToken.role === 'admin') {
       console.log('Token verification: User has admin claims');
 
+      // Update Firestore user document to ensure admin fields are set
+      try {
+        const userRef = admin.firestore().collection('users').doc(decodedToken.uid);
+        await userRef.set({
+          role: 'admin',
+          isAdmin: true
+        }, { merge: true });
+        console.log('Firestore user document updated with admin role and isAdmin=true');
+      } catch (firestoreError) {
+        console.log('Firestore error updating admin fields:', firestoreError.message);
+      }
+
       // Try to get admin data from Firestore
       try {
         const adminDoc = await admin.firestore().collection('admins').doc(decodedToken.uid).get();
