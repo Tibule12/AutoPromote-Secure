@@ -1,0 +1,50 @@
+name: Node.js CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 20.x]
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci || npm install
+    
+    - name: Verify syntax
+      run: node -c server.js
+      
+    # Add this section if you have tests
+    # - name: Run tests
+    #   run: npm test
+      
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Deploy to Render
+      # This is just a notification - Render has its own deployment process
+      run: echo "Deploying to Render - Render automatically deploys when new code is pushed to the main branch"
+      
+    # If you want to use Render deploy hooks for manual triggers:
+    - name: Trigger Render deploy hook
+      run: |
+        curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      # Only enable this if you've set the RENDER_DEPLOY_HOOK_URL secret in your GitHub repository
