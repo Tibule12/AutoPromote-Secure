@@ -17,10 +17,12 @@
 - [x] Added multer for file handling
 - [x] Updated upload endpoint to handle file uploads and generate Storage URLs
 - [x] Ensured proper content flow: File → Storage → URL → Database → Dashboard
+- [x] Updated validation to require either file or URL for video/image/audio content
 
 ## Next Steps
 - [x] Test the complete upload flow with Firebase Storage
 - [x] Verify file uploads work correctly (authentication working properly)
+- [x] Fixed admin login redirection by adding Firebase initialization to admin-login.html
 - [ ] Test admin dashboard content fetching
 - [ ] Deploy changes to Render
 - [ ] Test authentication flow on deployed server
