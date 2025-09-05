@@ -64,6 +64,32 @@ If you encounter issues during deployment:
 4. Make sure your Firebase service account has the necessary permissions
 5. Check if your Firebase project's Firestore security rules allow the operations
 
+### Common Deployment Errors
+
+#### Module Not Found Errors
+
+If you see errors like `Cannot find module './validationMiddleware'` or similar:
+
+1. Check that all required modules and service files exist in your repository
+2. Ensure all imported files are correctly named (case-sensitive)
+3. For missing files, check the original repository and copy them over
+
+#### Firebase Admin Initialization Issues
+
+If you see Firebase Admin initialization errors:
+
+1. Verify the `FIREBASE_SERVICE_ACCOUNT` environment variable is properly formatted as a single-line JSON string
+2. Check that your Firebase project ID matches the one in your service account
+3. Ensure your service account has the necessary permissions
+
+#### Database Connection Errors
+
+If your application connects to the database successfully but operations fail:
+
+1. Check Firestore security rules to ensure they allow the operations
+2. Verify the collections referenced in your code exist in your Firestore database
+3. Check that your service account has the appropriate roles assigned
+
 ## Updating Your Application
 
 When you push new changes to your GitHub repository, Render will automatically redeploy your application.
