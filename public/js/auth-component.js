@@ -58,8 +58,10 @@ class AuthComponent {
                 }
                 
                 // Redirect admin users to admin dashboard
-                if (this.isAdmin && window.location.pathname !== '/admin-dashboard') {
+                if (this.isAdmin && window.location.pathname !== '/admin-dashboard' && window.location.pathname !== '/admin-login') {
                     window.location.href = '/admin-dashboard';
+                } else if (!this.isAdmin && window.location.pathname !== '/upload-content' && window.location.pathname !== '/login') {
+                    window.location.href = '/upload-content';
                 }
                 
                 return true;
