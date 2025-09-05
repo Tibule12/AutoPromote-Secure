@@ -94,9 +94,12 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Upload content with advanced scheduling and optimization
-router.post('/upload', authMiddleware, sanitizeInput, validateContentData, validateRateLimit, async (req, res) => {
+// Test endpoint without authentication for debugging - saves to Firebase
+router.post('/upload-test', sanitizeInput, validateContentData, async (req, res) => {
   try {
+    console.log('=== TEST UPLOAD REQUEST START ===');
+    console.log('Raw request body:', JSON.stringify(req.body, null, 2));
+
     const {
       title,
       type,
@@ -110,12 +113,96 @@ router.post('/upload', authMiddleware, sanitizeInput, validateContentData, valid
       max_budget
     } = req.body;
 
-    console.log('Content upload request received:', {
-      userId: req.userId,
+    console.log('Parsed request data:', {
+      title: title ? 'provided' : 'MISSING',
+      type: type ? 'provided' : 'MISSING',
+      url: url ? 'provided' : 'MISSING',
+      description: description || 'none',
+      target_platforms: target_platforms ? 'provided' : 'none',
+      scheduled_promotion_time: scheduled_promotion_time || 'none',
+      promotion_frequency: promotion_frequency || 'none',
+      max_budget: max_budget || 'none'
+    });
+
+    // Create content document
+    const contentData = {
       title,
       type,
-      url: url ? 'provided' : 'missing',
-      description: description || 'none'
+      url,
+      description,
+      target_platforms,
+      scheduled_promotion_time,
+      promotion_frequency,
+      target_rpm,
+      min_views_threshold,
+      max_budget,
+      user_id: 'test-user',
+      created_at: new Date().toISOString(),
+      status: 'pending'
+    };
+
+    console.log('Content data to be saved:', JSON.stringify(contentData, null, 2));
+
+    // Filter out undefined values for Firestore
+    const filteredContentData = Object.fromEntries(
+      Object.entries(contentData).filter(([_, value]) => value !== undefined)
+    );
+
+    console.log('Filtered content data for Firestore:', JSON.stringify(filteredContentData, null, 2));
+
+    // Save to Firebase
+    const { db } = require('./firebaseAdmin');
+    const docRef = await db.collection('content').add(filteredContentData);
+    const savedContent = { id: docRef.id, ...contentData };
+
+    console.log('=== TEST UPLOAD SUCCESS - SAVED TO FIREBASE ===');
+    console.log('Document ID:', docRef.id);
+
+    res.status(201).json({
+      message: 'Content uploaded successfully and saved to Firebase',
+      content: savedContent
+    });
+
+  } catch (error) {
+    console.error('Test upload error:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
+// Upload content with advanced scheduling and optimization
+router.post('/upload', authMiddleware, sanitizeInput, validateContentData, validateRateLimit, async (req, res) => {
+  try {
+    console.log('=== CONTENT UPLOAD REQUEST START ===');
+    console.log('Raw request body:', JSON.stringify(req.body, null, 2));
+    console.log('Request headers:', {
+      'content-type': req.headers['content-type'],
+      'authorization': req.headers.authorization ? 'Present' : 'Missing',
+      'user-agent': req.headers['user-agent']
+    });
+    console.log('User ID from auth:', req.userId);
+
+    const {
+      title,
+      type,
+      url,
+      description,
+      target_platforms,
+      scheduled_promotion_time,
+      promotion_frequency,
+      target_rpm,
+      min_views_threshold,
+      max_budget
+    } = req.body;
+
+    console.log('Parsed request data:', {
+      title: title ? 'provided' : 'MISSING',
+      type: type ? 'provided' : 'MISSING',
+      url: url ? 'provided' : 'MISSING',
+      description: description || 'none',
+      target_platforms: target_platforms ? 'provided' : 'none',
+      scheduled_promotion_time: scheduled_promotion_time || 'none',
+      promotion_frequency: promotion_frequency || 'none',
+      max_budget: max_budget || 'none'
     });
 
     // TEMPORARILY DISABLED: Rate limiting for testing
