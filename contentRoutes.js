@@ -20,7 +20,8 @@
 // });
 
 const express = require('express');
-const { db } = require('./firebaseAdmin');
+const multer = require('multer');
+const { db, storage } = require('./firebaseAdmin');
 const authMiddleware = require('./authMiddleware');
 const {
   validateContentData,
@@ -32,6 +33,68 @@ const {
 const promotionService = require('./promotionService');
 const optimizationService = require('./optimizationService');
 const router = express.Router();
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/avi', 'video/mov', 'audio/mp3', 'audio/wav'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only images, videos, and audio files are allowed.'), false);
+    }
+  }
+});
+
+// Helper function to upload file to Firebase Storage
+const uploadFileToStorage = async (file, userId, contentType) => {
+  try {
+    const bucket = storage.bucket();
+    const fileName = `${userId}/${Date.now()}_${file.originalname}`;
+    const fileUpload = bucket.file(fileName);
+
+    const stream = fileUpload.createWriteStream({
+      metadata: {
+        contentType: file.mimetype,
+        metadata: {
+          originalName: file.originalname,
+          uploadTime: new Date().toISOString(),
+          userId: userId,
+          contentType: contentType
+        }
+      },
+      public: true, // Make file publicly accessible
+      resumable: false
+    });
+
+    return new Promise((resolve, reject) => {
+      stream.on('error', (error) => {
+        console.error('Error uploading to Firebase Storage:', error);
+        reject(error);
+      });
+
+      stream.on('finish', async () => {
+        try {
+          // Get the public URL
+          const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+          console.log('✅ File uploaded to Firebase Storage:', publicUrl);
+          resolve(publicUrl);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      stream.end(file.buffer);
+    });
+  } catch (error) {
+    console.error('Error in uploadFileToStorage:', error);
+    throw error;
+  }
+};
 
 // Helper function to check if user can upload (rate limiting)
 const canUserUpload = async (userId, daysAgo = 21) => {
@@ -170,7 +233,7 @@ router.post('/upload-test', sanitizeInput, validateContentData, async (req, res)
 });
 
 // Upload content with advanced scheduling and optimization
-router.post('/upload', authMiddleware, sanitizeInput, validateContentData, validateRateLimit, async (req, res) => {
+router.post('/upload', authMiddleware, upload.single('file'), sanitizeInput, validateContentData, validateRateLimit, async (req, res) => {
   try {
     console.log('=== CONTENT UPLOAD REQUEST START ===');
     console.log('Raw request body:', JSON.stringify(req.body, null, 2));
@@ -180,6 +243,7 @@ router.post('/upload', authMiddleware, sanitizeInput, validateContentData, valid
       'user-agent': req.headers['user-agent']
     });
     console.log('User ID from auth:', req.userId);
+    console.log('File uploaded:', req.file ? `${req.file.originalname} (${req.file.size} bytes)` : 'No file');
 
     const {
       title,
@@ -221,10 +285,32 @@ router.post('/upload', authMiddleware, sanitizeInput, validateContentData, valid
     }
     */
 
+    // Handle file upload for video/image/audio content
+    let finalUrl = url;
+    if (req.file && (type === 'video' || type === 'image' || type === 'audio')) {
+      console.log('📤 Uploading file to Firebase Storage...');
+      try {
+        finalUrl = await uploadFileToStorage(req.file, req.userId, type);
+        console.log('✅ File uploaded successfully, URL:', finalUrl);
+      } catch (uploadError) {
+        console.error('❌ File upload failed:', uploadError);
+        return res.status(500).json({
+          error: 'File upload failed',
+          details: uploadError.message
+        });
+      }
+    } else if (!url && type !== 'article') {
+      // For non-article content, either file or URL must be provided
+      return res.status(400).json({
+        error: 'File upload required',
+        message: 'For video, image, and audio content, you must either upload a file or provide a URL'
+      });
+    }
+
     // Set business rules
     const optimalRPM = 900000; // Revenue per million views
     const minViews = 2000000; // 2 million views per day
-  const creatorPayoutRate = 0.01; // 1%
+    const creatorPayoutRate = 0.01; // 1%
     const maxBudget = max_budget || 1000;
 
     // Insert content into Firestore
@@ -234,7 +320,7 @@ router.post('/upload', authMiddleware, sanitizeInput, validateContentData, valid
       user_id: req.userId,
       title,
       type,
-      url,
+      url: finalUrl,
       description: description || '',
       target_platforms: target_platforms || ['youtube', 'tiktok', 'instagram'],
       status: 'pending', // All new content must be reviewed by admin
@@ -249,7 +335,13 @@ router.post('/upload', authMiddleware, sanitizeInput, validateContentData, valid
       revenue_per_million: optimalRPM,
       creator_payout_rate: creatorPayoutRate,
       views: 0,
-      revenue: 0
+      revenue: 0,
+      file_metadata: req.file ? {
+        original_name: req.file.originalname,
+        mime_type: req.file.mimetype,
+        size: req.file.size,
+        uploaded_at: new Date().toISOString()
+      } : null
     };
 
     console.log('Content data to save:', JSON.stringify(contentData, null, 2));
@@ -303,7 +395,9 @@ router.post('/upload', authMiddleware, sanitizeInput, validateContentData, valid
       message: scheduled_promotion_time ? 'Content uploaded and scheduled for promotion' : 'Content uploaded successfully',
       contentId: content.id,
       hasPromotionSchedule: !!promotionSchedule,
-      hasRecommendations: !!recommendations
+      hasRecommendations: !!recommendations,
+      fileUploaded: !!req.file,
+      storageUrl: finalUrl
     });
 
     res.status(201).json({
@@ -312,7 +406,9 @@ router.post('/upload', authMiddleware, sanitizeInput, validateContentData, valid
       promotion_schedule: promotionSchedule,
       optimization_recommendations: recommendations,
       optimal_rpm: optimalRPM,
-  creator_payout: minViews * (optimalRPM / 1000000) * creatorPayoutRate
+      creator_payout: minViews * (optimalRPM / 1000000) * creatorPayoutRate,
+      file_uploaded: !!req.file,
+      storage_url: finalUrl
     });
   } catch (error) {
     console.error('Upload error:', error);
