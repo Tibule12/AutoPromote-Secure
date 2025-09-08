@@ -190,20 +190,24 @@
       </div>
 
       <div class="form-group">
-        <label for="category">Category</label>
-        <select id="category" name="category">
-          <option value="">Select category</option>
+        <label for="type">Content Type *</label>
+        <select id="type" name="type" required>
+          <option value="">Select content type</option>
           <option value="video">Video</option>
           <option value="image">Image</option>
-          <option value="document">Document</option>
           <option value="audio">Audio</option>
-          <option value="other">Other</option>
+          <option value="article">Article</option>
         </select>
       </div>
 
+      <div class="form-group" id="url-group" style="display: none;">
+        <label for="url">URL (required for articles)</label>
+        <input type="url" id="url" name="url" placeholder="https://example.com/article" />
+      </div>
+
       <div class="form-group">
-        <label for="tags">Tags (comma separated)</label>
-        <input type="text" id="tags" name="tags" placeholder="tag1, tag2, tag3" />
+        <label for="target_platforms">Target Platforms (comma separated)</label>
+        <input type="text" id="target_platforms" name="target_platforms" placeholder="youtube, tiktok, instagram" />
       </div>
 
       <div class="form-group">
@@ -236,6 +240,233 @@
   <script src="/js/auth-component.js"></script>
 
   <script>
+    // Fix duplicate declaration errors by wrapping in IIFE
+    (function() {
+      if (window.authComponentInitialized) return;
+      window.authComponentInitialized = true;
+
+      // Initialize auth component
+      const auth = new AuthComponent('/login');
+
+      // Check authentication on page load
+      document.addEventListener('DOMContentLoaded', async () => {
+        try {
+          const isAuthenticated = auth.isUserAuthenticated();
+
+          if (!isAuthenticated) {
+            window.location.href = '/login';
+            return;
+          }
+
+          // Update user info
+          const userData = auth.getUserData();
+          if (userData) {
+            document.getElementById('user-name').textContent = `Welcome, ${userData.name || userData.email}`;
+          }
+
+          // Initialize file upload
+          initializeFileUpload();
+
+          // Initialize content type change handler
+          initializeContentTypeHandler();
+
+        } catch (error) {
+          console.error('Page initialization error:', error);
+          showError('Failed to load page. Please refresh.');
+        }
+      });
+
+      // Logout functionality
+      document.getElementById('logout-btn').addEventListener('click', () => {
+        auth.logout();
+      });
+
+      // Initialize file upload functionality
+      function initializeFileUpload() {
+        const fileUploadArea = document.getElementById('file-upload-area');
+        const fileInput = document.getElementById('file-input');
+        const fileName = document.getElementById('file-name');
+
+        // Click to open file dialog
+        fileUploadArea.addEventListener('click', () => {
+          fileInput.click();
+        });
+
+        // File selection
+        fileInput.addEventListener('change', (e) => {
+          handleFileSelect(e.target.files[0]);
+        });
+
+        // Drag and drop
+        fileUploadArea.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          fileUploadArea.classList.add('dragover');
+        });
+
+        fileUploadArea.addEventListener('dragleave', () => {
+          fileUploadArea.classList.remove('dragover');
+        });
+
+        fileUploadArea.addEventListener('drop', (e) => {
+          e.preventDefault();
+          fileUploadArea.classList.remove('dragover');
+          const files = e.dataTransfer.files;
+          if (files.length > 0) {
+            handleFileSelect(files[0]);
+          }
+        });
+      }
+
+      // Handle file selection
+      function handleFileSelect(file) {
+        if (!file) return;
+
+        const fileName = document.getElementById('file-name');
+        fileName.textContent = `Selected: ${file.name} (${formatFileSize(file.size)})`;
+
+        // Store file for upload
+        window.selectedFile = file;
+      }
+
+      // Format file size
+      function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+      }
+
+      // Form submission
+      document.getElementById('upload-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (!window.selectedFile) {
+          showError('Please select a file to upload.');
+          return;
+        }
+
+        const type = document.getElementById('type').value;
+        const targetPlatforms = document.getElementById('target_platforms').value;
+
+        const formData = new FormData();
+        formData.append('file', window.selectedFile);
+        formData.append('title', document.getElementById('title').value);
+        formData.append('description', document.getElementById('description').value);
+        formData.append('type', type);
+
+        // Add URL for articles
+        if (type === 'article') {
+          const url = document.getElementById('url').value;
+          if (url) {
+            formData.append('url', url);
+          }
+        }
+
+        // Add target platforms if provided
+        if (targetPlatforms.trim()) {
+          const platforms = targetPlatforms.split(',').map(p => p.trim()).filter(p => p);
+          formData.append('target_platforms', JSON.stringify(platforms));
+        }
+
+        // Show progress
+        const uploadBtn = document.getElementById('upload-btn');
+        const uploadText = document.getElementById('upload-text');
+        const progressBar = document.getElementById('progress-bar');
+        const progressFill = document.getElementById('progress-fill');
+
+        uploadBtn.disabled = true;
+        uploadText.textContent = 'Uploading...';
+        progressBar.style.display = 'block';
+
+        try {
+          // Simulate progress (in a real app, you'd track actual upload progress)
+          let progress = 0;
+          const progressInterval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress > 90) progress = 90;
+            progressFill.style.width = progress + '%';
+          }, 200);
+
+          const result = await api.uploadContent(formData);
+
+          clearInterval(progressInterval);
+          progressFill.style.width = '100%';
+
+          if (result && result.ok) {
+            showSuccess('Content uploaded successfully!');
+            // Reset form
+            document.getElementById('upload-form').reset();
+            document.getElementById('file-name').textContent = '';
+            window.selectedFile = null;
+          } else {
+            throw new Error(result.error || 'Upload failed');
+          }
+
+        } catch (error) {
+          console.error('Upload error:', error);
+          showError('Upload failed. Please try again.');
+        } finally {
+          // Reset UI
+          setTimeout(() => {
+            uploadBtn.disabled = false;
+            uploadText.textContent = 'Upload Content';
+            progressBar.style.display = 'none';
+            progressFill.style.width = '0%';
+          }, 2000);
+        }
+      });
+
+      // Show success message
+      function showSuccess(message) {
+        const successDiv = document.getElementById('success-message');
+        const errorDiv = document.getElementById('error-message');
+
+        successDiv.textContent = message;
+        successDiv.style.display = 'block';
+        errorDiv.style.display = 'none';
+
+        // Hide after 5 seconds
+        setTimeout(() => {
+          successDiv.style.display = 'none';
+        }, 5000);
+      }
+
+      // Show error message
+      function showError(message) {
+        const errorDiv = document.getElementById('error-message');
+        const successDiv = document.getElementById('success-message');
+
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        successDiv.style.display = 'none';
+
+        // Hide after 5 seconds
+        setTimeout(() => {
+          errorDiv.style.display = 'none';
+        }, 5000);
+      }
+
+      // Show or hide URL input based on content type
+      function initializeContentTypeHandler() {
+        const typeSelect = document.getElementById('type');
+        const urlGroup = document.getElementById('url-group');
+
+        function toggleUrlInput() {
+          if (typeSelect.value === 'article') {
+            urlGroup.style.display = 'block';
+          } else {
+            urlGroup.style.display = 'none';
+          }
+        }
+
+        typeSelect.addEventListener('change', toggleUrlInput);
+        toggleUrlInput(); // Initial call
+      }
+    })();
+  </script>
+
+  <script>
     // Initialize auth component
     const auth = new AuthComponent('/login');
 
@@ -257,6 +488,9 @@
 
         // Initialize file upload
         initializeFileUpload();
+
+        // Initialize content type change handler
+        initializeContentTypeHandler();
 
       } catch (error) {
         console.error('Page initialization error:', error);
@@ -334,12 +568,28 @@
         return;
       }
 
+      const type = document.getElementById('type').value;
+      const targetPlatforms = document.getElementById('target_platforms').value;
+
       const formData = new FormData();
       formData.append('file', window.selectedFile);
       formData.append('title', document.getElementById('title').value);
       formData.append('description', document.getElementById('description').value);
-      formData.append('category', document.getElementById('category').value);
-      formData.append('tags', document.getElementById('tags').value);
+      formData.append('type', type);
+
+      // Add URL for articles
+      if (type === 'article') {
+        const url = document.getElementById('url').value;
+        if (url) {
+          formData.append('url', url);
+        }
+      }
+
+      // Add target platforms if provided
+      if (targetPlatforms.trim()) {
+        const platforms = targetPlatforms.split(',').map(p => p.trim()).filter(p => p);
+        formData.append('target_platforms', JSON.stringify(platforms));
+      }
 
       // Show progress
       const uploadBtn = document.getElementById('upload-btn');
@@ -417,6 +667,22 @@
       setTimeout(() => {
         errorDiv.style.display = 'none';
       }, 5000);
+    }
+    // Show or hide URL input based on content type
+    function initializeContentTypeHandler() {
+      const typeSelect = document.getElementById('type');
+      const urlGroup = document.getElementById('url-group');
+
+      function toggleUrlInput() {
+        if (typeSelect.value === 'article') {
+          urlGroup.style.display = 'block';
+        } else {
+          urlGroup.style.display = 'none';
+        }
+      }
+
+      typeSelect.addEventListener('change', toggleUrlInput);
+      toggleUrlInput(); // Initial call
     }
   </script>
 </body>
