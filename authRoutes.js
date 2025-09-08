@@ -387,6 +387,8 @@ router.get('/redirect', async (req, res) => {
     // Redirect based on role
     if (isAdmin || role === 'admin') {
       return res.redirect('/admin/dashboard');
+    } else if (role === 'user') {
+      return res.redirect('/user/upload-content');
     } else {
       return res.redirect('/user/dashboard');
     }

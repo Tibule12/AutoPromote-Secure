@@ -82,6 +82,9 @@ if (process.env.NODE_ENV !== 'production') {
   app.options('*', cors()); // Enable preflight for all routes in development
 }
 
+// Explicit OPTIONS handler for upload endpoint to handle CORS preflight
+app.options('/api/content/upload', cors(corsOptions));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
