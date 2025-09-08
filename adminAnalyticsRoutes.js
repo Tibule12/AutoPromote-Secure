@@ -378,11 +378,17 @@ router.get('/content', authMiddleware, async (req, res) => {
         let userData = null;
         
         try {
-          // Get user name
-          const userDoc = await db.collection('users').doc(contentData.userId).get();
-          userData = userDoc.exists ? userDoc.data() : null;
+          // Get user name - only if userId exists and is valid
+          if (contentData.userId && typeof contentData.userId === 'string' && contentData.userId.trim() !== '') {
+            const userDoc = await db.collection('users').doc(contentData.userId).get();
+            userData = userDoc.exists ? userDoc.data() : null;
+          } else {
+            console.log(`Content ${contentDoc.id} has invalid or missing userId:`, contentData.userId);
+            userData = null;
+          }
         } catch (error) {
           console.log(`Error fetching user for content ${contentDoc.id}:`, error.message);
+          userData = null;
         }
 
         content.push({
