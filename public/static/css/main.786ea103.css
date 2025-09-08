@@ -1,0 +1,65 @@
+/* Basic CSS for AutoPromote Admin Dashboard and Login */
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f8f9fa;
+  margin: 0;
+  padding: 0;
+  color: #333;
+}
+
+.login-container {
+  max-width: 400px;
+  margin: 80px auto;
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.login-container h1 {
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+  text-align: center;
+}
+
+.login-container label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: bold;
+}
+
+.login-container input[type="email"],
+.login-container input[type="password"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 1rem;
+}
+
+.login-container button {
+  width: 100%;
+  padding: 12px;
+  background-color: #007bff;
+  border: none;
+  color: white;
+  font-size: 1.1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.login-container button:hover {
+  background-color: #0056b3;
+}
+
+.error-message {
+  color: #dc3545;
+  margin-top: 10px;
+  text-align: center;
+  font-weight: bold;
+}
+
+/* Additional styles for admin dashboard are included inline in admin-dashboard.html */

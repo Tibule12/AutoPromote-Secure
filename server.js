@@ -133,6 +133,14 @@ app.get('/admin-dashboard', (req, res) => {
   });
 });
 
+app.get('/upload-content', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'upload-content.html'), (err) => {
+    if (err) {
+      res.send('<html><body><h1>Upload Content</h1><p>The upload page is not available.</p></body></html>');
+    }
+  });
+});
+
 app.get('/test-upload', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'test-upload.html'), (err) => {
     if (err) {

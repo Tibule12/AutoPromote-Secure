@@ -386,11 +386,11 @@ router.get('/redirect', async (req, res) => {
 
     // Redirect based on role
     if (isAdmin || role === 'admin') {
-      return res.redirect('/admin/dashboard');
+      return res.redirect('/admin-dashboard');
     } else if (role === 'user') {
-      return res.redirect('/user/upload-content');
+      return res.redirect('/upload-content');
     } else {
-      return res.redirect('/user/dashboard');
+      return res.redirect('/dashboard');
     }
   } catch (error) {
     console.error('Redirect error:', error);

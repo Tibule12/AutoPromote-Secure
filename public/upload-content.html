@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Upload Content - AutoPromote</title>
+  <link rel="stylesheet" href="static/css/main.786ea103.css" />
+  <style>
+    .upload-container {
+      max-width: 800px;
+      margin: 40px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .upload-container h1 {
+      margin-bottom: 30px;
+      font-size: 2rem;
+      text-align: center;
+      color: #333;
+    }
+
+    .upload-form {
+      display: grid;
+      gap: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group label {
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .file-upload-area {
+      border: 2px dashed #ddd;
+      border-radius: 4px;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.3s;
+    }
+
+    .file-upload-area:hover {
+      border-color: #007bff;
+    }
+
+    .file-upload-area.dragover {
+      border-color: #007bff;
+      background-color: #f8f9ff;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .upload-btn {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 15px;
+      font-size: 1.1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    .upload-btn:hover {
+      background-color: #218838;
+    }
+
+    .upload-btn:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background-color: #e9ecef;
+      border-radius: 4px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background-color: #007bff;
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .success-message {
+      background-color: #d4edda;
+      color: #155724;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .error-message {
+      background-color: #f8d7da;
+      color: #721c24;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .user-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .logout-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .logout-btn:hover {
+      background: #c82333;
+    }
+
+    @media (max-width: 768px) {
+      .upload-container {
+        margin: 20px;
+        padding: 20px;
+      }
+
+      .user-info {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="upload-container">
+    <div class="user-info">
+      <h2 id="user-name">Loading...</h2>
+      <button id="logout-btn" class="logout-btn">Logout</button>
+    </div>
+
+    <h1>Upload Content</h1>
+
+    <div id="error-message" class="error-message"></div>
+    <div id="success-message" class="success-message"></div>
+
+    <form id="upload-form" class="upload-form">
+      <div class="form-group">
+        <label for="title">Content Title *</label>
+        <input type="text" id="title" name="title" required placeholder="Enter content title" />
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" placeholder="Describe your content"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="category">Category</label>
+        <select id="category" name="category">
+          <option value="">Select category</option>
+          <option value="video">Video</option>
+          <option value="image">Image</option>
+          <option value="document">Document</option>
+          <option value="audio">Audio</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="tags">Tags (comma separated)</label>
+        <input type="text" id="tags" name="tags" placeholder="tag1, tag2, tag3" />
+      </div>
+
+      <div class="form-group">
+        <label>Upload File *</label>
+        <div class="file-upload-area" id="file-upload-area">
+          <div>
+            <p>Drag and drop your file here, or click to browse</p>
+            <p style="font-size: 0.9rem; color: #666;">Supported formats: Images, Videos, Documents, Audio files</p>
+          </div>
+        </div>
+        <input type="file" id="file-input" name="file" class="file-input" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt" />
+        <div id="file-name" style="margin-top: 10px; font-size: 0.9rem; color: #666;"></div>
+      </div>
+
+      <div class="progress-bar" id="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+
+      <button type="submit" class="upload-btn" id="upload-btn">
+        <span id="upload-text">Upload Content</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- Auth Helper -->
+  <script src="/js/auth-helper.js"></script>
+  <!-- API Client -->
+  <script src="/js/api-client.js"></script>
+  <!-- Auth Component -->
+  <script src="/js/auth-component.js"></script>
+
+  <script>
+    // Initialize auth component
+    const auth = new AuthComponent('/login');
+
+    // Check authentication on page load
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const isAuthenticated = auth.isUserAuthenticated();
+
+        if (!isAuthenticated) {
+          window.location.href = '/login';
+          return;
+        }
+
+        // Update user info
+        const userData = auth.getUserData();
+        if (userData) {
+          document.getElementById('user-name').textContent = `Welcome, ${userData.name || userData.email}`;
+        }
+
+        // Initialize file upload
+        initializeFileUpload();
+
+      } catch (error) {
+        console.error('Page initialization error:', error);
+        showError('Failed to load page. Please refresh.');
+      }
+    });
+
+    // Logout functionality
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      auth.logout();
+    });
+
+    // Initialize file upload functionality
+    function initializeFileUpload() {
+      const fileUploadArea = document.getElementById('file-upload-area');
+      const fileInput = document.getElementById('file-input');
+      const fileName = document.getElementById('file-name');
+
+      // Click to open file dialog
+      fileUploadArea.addEventListener('click', () => {
+        fileInput.click();
+      });
+
+      // File selection
+      fileInput.addEventListener('change', (e) => {
+        handleFileSelect(e.target.files[0]);
+      });
+
+      // Drag and drop
+      fileUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        fileUploadArea.classList.add('dragover');
+      });
+
+      fileUploadArea.addEventListener('dragleave', () => {
+        fileUploadArea.classList.remove('dragover');
+      });
+
+      fileUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        fileUploadArea.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          handleFileSelect(files[0]);
+        }
+      });
+    }
+
+    // Handle file selection
+    function handleFileSelect(file) {
+      if (!file) return;
+
+      const fileName = document.getElementById('file-name');
+      fileName.textContent = `Selected: ${file.name} (${formatFileSize(file.size)})`;
+
+      // Store file for upload
+      window.selectedFile = file;
+    }
+
+    // Format file size
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Form submission
+    document.getElementById('upload-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!window.selectedFile) {
+        showError('Please select a file to upload.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', window.selectedFile);
+      formData.append('title', document.getElementById('title').value);
+      formData.append('description', document.getElementById('description').value);
+      formData.append('category', document.getElementById('category').value);
+      formData.append('tags', document.getElementById('tags').value);
+
+      // Show progress
+      const uploadBtn = document.getElementById('upload-btn');
+      const uploadText = document.getElementById('upload-text');
+      const progressBar = document.getElementById('progress-bar');
+      const progressFill = document.getElementById('progress-fill');
+
+      uploadBtn.disabled = true;
+      uploadText.textContent = 'Uploading...';
+      progressBar.style.display = 'block';
+
+      try {
+        // Simulate progress (in a real app, you'd track actual upload progress)
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+          progress += Math.random() * 15;
+          if (progress > 90) progress = 90;
+          progressFill.style.width = progress + '%';
+        }, 200);
+
+        const result = await api.uploadContent(formData);
+
+        clearInterval(progressInterval);
+        progressFill.style.width = '100%';
+
+        if (result && result.ok) {
+          showSuccess('Content uploaded successfully!');
+          // Reset form
+          document.getElementById('upload-form').reset();
+          document.getElementById('file-name').textContent = '';
+          window.selectedFile = null;
+        } else {
+          throw new Error(result.error || 'Upload failed');
+        }
+
+      } catch (error) {
+        console.error('Upload error:', error);
+        showError('Upload failed. Please try again.');
+      } finally {
+        // Reset UI
+        setTimeout(() => {
+          uploadBtn.disabled = false;
+          uploadText.textContent = 'Upload Content';
+          progressBar.style.display = 'none';
+          progressFill.style.width = '0%';
+        }, 2000);
+      }
+    });
+
+    // Show success message
+    function showSuccess(message) {
+      const successDiv = document.getElementById('success-message');
+      const errorDiv = document.getElementById('error-message');
+
+      successDiv.textContent = message;
+      successDiv.style.display = 'block';
+      errorDiv.style.display = 'none';
+
+      // Hide after 5 seconds
+      setTimeout(() => {
+        successDiv.style.display = 'none';
+      }, 5000);
+    }
+
+    // Show error message
+    function showError(message) {
+      const errorDiv = document.getElementById('error-message');
+      const successDiv = document.getElementById('success-message');
+
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+      successDiv.style.display = 'none';
+
+      // Hide after 5 seconds
+      setTimeout(() => {
+        errorDiv.style.display = 'none';
+      }, 5000);
+    }
+  </script>
+</body>
+</html>

@@ -58,20 +58,9 @@ const validateContentData = (req, res, next) => {
       }
     }
   } else if (type === 'video' || type === 'image' || type === 'audio') {
-    // For video/image/audio, either file or URL must be provided
-    if (!req.file && !url) {
-      errors.push('Either a file must be uploaded or a URL provided for video/image/audio content');
-    } else if (url !== undefined) {
-      // If URL is provided, it must be valid
-      if (typeof url !== 'string') {
-        errors.push('URL must be a string if provided');
-      } else {
-        try {
-          new URL(url);
-        } catch (error) {
-          errors.push('Invalid URL format');
-        }
-      }
+    // For video/image/audio, file must be provided
+    if (!req.file) {
+      errors.push('A file must be uploaded for video, image, or audio content');
     }
   } else if (url !== undefined) {
     // For other content types, URL is optional but if provided must be valid
