@@ -8,7 +8,7 @@
     "dev": "nodemon server.js",
     "test": "node test-firebase-integration.js",
     "deploy": "npm install && npm run build",
-    "build": "npm run clean && npm run compile",
+    "build": "node build.js",
     "clean": "rimraf dist",
     "compile": "mkdir dist && copy *.js dist\\ && copy *.json dist\\ && if exist .env copy .env dist\\"
   },
