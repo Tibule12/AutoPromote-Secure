@@ -47,15 +47,19 @@ const validateContentData = (req, res, next) => {
 
   // URL validation - make it conditional based on content type
   if (type === 'article') {
-    // For articles, URL is required
-    if (!url || typeof url !== 'string') {
-      errors.push('URL is required for article content and must be a string');
-    } else {
+    // For articles, either URL or articleText is required
+    if (!url && !req.body.articleText) {
+      errors.push('Either URL or articleText is required for article content');
+    } else if (url && typeof url !== 'string') {
+      errors.push('URL must be a string if provided');
+    } else if (url) {
       try {
         new URL(url);
       } catch (error) {
         errors.push('Invalid URL format');
       }
+    } else if (req.body.articleText && typeof req.body.articleText !== 'string') {
+      errors.push('articleText must be a string if provided');
     }
   } else if (type === 'video' || type === 'image' || type === 'audio') {
     // For video/image/audio, file must be provided
