@@ -22,6 +22,7 @@
     "firebase-admin": "^13.5.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
+    "nanoid": "^5.0.7",
     "node-fetch": "^2.7.0",
     "stripe": "^18.5.0"
   },

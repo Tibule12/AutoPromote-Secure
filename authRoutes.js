@@ -110,18 +110,50 @@ router.post('/login', async (req, res) => {
     let role = 'user';
     let isAdmin = false;
     let fromCollection = 'users';
-    
-    // For regular login, only check the users collection
+
+    // For regular login, check both users and admins collections
     try {
-      // Check regular users collection
-      console.log('Checking users collection for user:', decodedToken.uid);
-      const userDoc = await admin.firestore().collection('users').doc(decodedToken.uid).get();
-      
-      if (userDoc.exists) {
-        userData = userDoc.data();
-        role = userData.role || 'user';
-        isAdmin = userData.isAdmin === true || userData.role === 'admin';
-        console.log('User data from Firestore:', userData);
+      // First, check if user exists in admins collection
+      console.log('Checking admins collection for user:', decodedToken.uid);
+      const adminDoc = await admin.firestore().collection('admins').doc(decodedToken.uid).get();
+
+      if (adminDoc.exists) {
+        console.log('User found in admins collection');
+        userData = adminDoc.data();
+        fromCollection = 'admins';
+        role = 'admin';
+        isAdmin = true;
+
+        // Update lastLogin in admin document
+        await admin.firestore().collection('admins').doc(decodedToken.uid).update({
+          lastLogin: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Log the admin login to admin_logs collection for audit (optional)
+        try {
+          await admin.firestore().collection('admin_logs').add({
+            action: 'admin_login',
+            adminId: decodedToken.uid,
+            email: decodedToken.email,
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            ipAddress: req.ip || 'unknown'
+          });
+        } catch (logError) {
+          console.log('Could not log admin login (Firestore may not be available):', logError.message);
+        }
+      } else {
+        // If not in admins, check regular users collection
+        console.log('User not in admins collection, checking users collection');
+        const userDoc = await admin.firestore().collection('users').doc(decodedToken.uid).get();
+
+        if (userDoc.exists) {
+          userData = userDoc.data();
+          role = userData.role || 'user';
+          isAdmin = userData.isAdmin === true || userData.role === 'admin';
+          console.log('User data from users collection:', userData);
+        } else {
+          console.log('User not found in any collection');
+        }
       }
     } catch (firestoreError) {
       console.log('Error fetching from Firestore:', firestoreError);
