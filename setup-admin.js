@@ -1,14 +1,28 @@
 require('dotenv').config();
 const admin = require('firebase-admin');
 
-// Initialize Firebase Admin SDK
-const serviceAccount = require('./serviceAccountKey.json');
+// Initialize Firebase Admin SDK using environment variable
+let firebaseConfig;
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: process.env.FIREBASE_DATABASE_URL,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET
-});
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  try {
+    firebaseConfig = {
+      credential: admin.credential.cert(
+        JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+      )
+    };
+  } catch (err) {
+    console.error('Error parsing Firebase service account from env:', err);
+    process.exit(1);
+  }
+} else {
+  firebaseConfig = {
+    projectId: process.env.FIREBASE_PROJECT_ID || 'autopromote-464de',
+    credential: admin.credential.applicationDefault()
+  };
+}
+
+admin.initializeApp(firebaseConfig);
 
 async function setupAdminUser() {
   try {
