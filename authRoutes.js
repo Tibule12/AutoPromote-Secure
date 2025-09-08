@@ -346,6 +346,56 @@ router.post('/admin-login', async (req, res) => {
   }
 });
 
+// Redirect endpoint based on user role
+router.get('/redirect', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!token) {
+      return res.redirect('/login'); // Redirect to login if no token
+    }
+
+    // Verify the Firebase token
+    const decodedToken = await admin.auth().verifyIdToken(token);
+
+    // Check if user is admin
+    let isAdmin = false;
+    let role = 'user';
+
+    try {
+      // Check admins collection first
+      const adminDoc = await admin.firestore().collection('admins').doc(decodedToken.uid).get();
+      if (adminDoc.exists) {
+        isAdmin = true;
+        role = 'admin';
+      } else {
+        // Check users collection
+        const userDoc = await admin.firestore().collection('users').doc(decodedToken.uid).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          isAdmin = userData.isAdmin === true || userData.role === 'admin';
+          role = userData.role || 'user';
+        }
+      }
+    } catch (firestoreError) {
+      console.log('Firestore error in redirect, using token claims:', firestoreError.message);
+      // Fall back to token claims
+      isAdmin = decodedToken.admin === true || decodedToken.role === 'admin';
+      role = decodedToken.role || 'user';
+    }
+
+    // Redirect based on role
+    if (isAdmin || role === 'admin') {
+      return res.redirect('/admin/dashboard');
+    } else {
+      return res.redirect('/user/dashboard');
+    }
+  } catch (error) {
+    console.error('Redirect error:', error);
+    return res.redirect('/login');
+  }
+});
+
 // Verify token endpoint
 router.get('/verify', async (req, res) => {
   try {
