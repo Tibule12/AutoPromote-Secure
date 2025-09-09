@@ -118,6 +118,12 @@ function App() {
     try {
       console.log('=== UPLOAD DEBUG START ===');
       console.log('Content data received:', contentData);
+      console.log('File object details:', contentData.file ? {
+        name: contentData.file.name,
+        size: contentData.file.size,
+        type: contentData.file.type,
+        lastModified: contentData.file.lastModified
+      } : 'NO FILE');
 
       const formData = new FormData();
 
@@ -142,6 +148,16 @@ function App() {
         } else {
           console.log(`${key}: ${value}`);
         }
+      }
+
+      // Check if FormData has the file
+      const hasFile = formData.has('file');
+      console.log('FormData has file:', hasFile);
+
+      if (!hasFile) {
+        console.error('❌ CRITICAL: FormData does not contain file!');
+        alert('File not found in FormData. Please try again.');
+        return;
       }
 
       // First, test with debug endpoint to see what we're sending
