@@ -355,25 +355,27 @@ const ContentUploadForm = ({ onUpload }) => {
   const [file, setFile] = useState(null);
   const [description, setDescription] = useState('');
   const [articleText, setArticleText] = useState('');
+  const [targetPlatforms, setTargetPlatforms] = useState(['youtube', 'tiktok', 'instagram']);
   const fileInputRef = useRef(null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (type === 'article') {
-      onUpload({ title, type, description, articleText });
+      onUpload({ title, type, description, articleText, target_platforms: targetPlatforms });
     } else {
       if (!file) {
         alert('Please select a file to upload.');
         return;
       }
       // Pass the file object; the parent component will handle FormData creation
-      onUpload({ title, type, description, file });
+      onUpload({ title, type, description, file, target_platforms: targetPlatforms });
     }
     // Clear form fields
     setTitle('');
     setFile(null);
     setDescription('');
     setArticleText('');
+    setTargetPlatforms(['youtube', 'tiktok', 'instagram']); // Reset to defaults
     // Clear the file input by resetting its value
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
