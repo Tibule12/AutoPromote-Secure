@@ -116,19 +116,35 @@ function App() {
 
   const handleUploadContent = async (contentData) => {
     try {
+      console.log('=== UPLOAD DEBUG START ===');
+      console.log('Content data received:', contentData);
+
       const formData = new FormData();
 
       // Add all fields to FormData
       Object.keys(contentData).forEach(key => {
         if (key === 'file' && contentData[key]) {
+          console.log('Adding file to FormData:', contentData[key].name, contentData[key].size, 'bytes');
           formData.append('file', contentData[key]);
         } else if (key === 'target_platforms' && Array.isArray(contentData[key])) {
           formData.append(key, JSON.stringify(contentData[key]));
         } else {
+          console.log(`Adding field ${key}:`, contentData[key]);
           formData.append(key, contentData[key]);
         }
       });
 
+      // Debug: Log FormData contents
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+        } else {
+          console.log(`${key}: ${value}`);
+        }
+      }
+
+      console.log('Sending request to backend...');
       const res = await fetch('https://autopromote.onrender.com/api/content/upload', {
         method: 'POST',
         headers: {
@@ -138,13 +154,19 @@ function App() {
         body: formData,
       });
 
+      console.log('Response status:', res.status);
+      console.log('Response headers:', Object.fromEntries(res.headers.entries()));
+
       if (res.ok) {
+        console.log('✅ Upload successful');
         fetchUserContent();
       } else {
-        console.error('Failed to upload content');
+        console.error('❌ Upload failed with status:', res.status);
+        const errorText = await res.text();
+        console.error('Error response:', errorText);
       }
     } catch (error) {
-      console.error('Error uploading content:', error);
+      console.error('❌ Error uploading content:', error);
     }
   };
 
