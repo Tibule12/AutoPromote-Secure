@@ -378,6 +378,10 @@ const ContentUploadForm = ({ onUpload }) => {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    // Force re-render to update file input display
+    setTimeout(() => {
+      setFile(null);
+    }, 0);
   };
 
   return (
