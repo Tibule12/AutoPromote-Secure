@@ -355,27 +355,59 @@ const ContentUploadForm = ({ onUpload }) => {
   const [file, setFile] = useState(null);
   const [description, setDescription] = useState('');
   const [articleText, setArticleText] = useState('');
+  const [url, setUrl] = useState('');
   const [targetPlatforms, setTargetPlatforms] = useState(['youtube', 'tiktok', 'instagram']);
+  const [scheduledPromotionTime, setScheduledPromotionTime] = useState('');
+  const [promotionFrequency, setPromotionFrequency] = useState('once');
+  const [targetRpm, setTargetRpm] = useState('');
+  const [minViewsThreshold, setMinViewsThreshold] = useState('');
+  const [maxBudget, setMaxBudget] = useState('');
   const fileInputRef = useRef(null);
+
+  const availablePlatforms = ['youtube', 'tiktok', 'instagram', 'facebook', 'twitter', 'linkedin', 'pinterest'];
+  const frequencyOptions = ['once', 'hourly', 'daily', 'weekly', 'biweekly', 'monthly', 'quarterly'];
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const contentData = {
+      title,
+      type,
+      description,
+      target_platforms: targetPlatforms,
+      scheduled_promotion_time: scheduledPromotionTime || undefined,
+      promotion_frequency: promotionFrequency || undefined,
+      target_rpm: targetRpm ? Number(targetRpm) : undefined,
+      min_views_threshold: minViewsThreshold ? Number(minViewsThreshold) : undefined,
+      max_budget: maxBudget ? Number(maxBudget) : undefined,
+    };
+
     if (type === 'article') {
-      onUpload({ title, type, description, articleText, target_platforms: targetPlatforms });
+      contentData.articleText = articleText;
+      if (url.trim() !== '') {
+        contentData.url = url.trim();
+      }
     } else {
       if (!file) {
         alert('Please select a file to upload.');
         return;
       }
-      // Pass the file object; the parent component will handle FormData creation
-      onUpload({ title, type, description, file, target_platforms: targetPlatforms });
+      contentData.file = file;
     }
+
+    onUpload(contentData);
+
     // Clear form fields
     setTitle('');
     setFile(null);
     setDescription('');
     setArticleText('');
+    setUrl('');
     setTargetPlatforms(['youtube', 'tiktok', 'instagram']); // Reset to defaults
+    setScheduledPromotionTime('');
+    setPromotionFrequency('once');
+    setTargetRpm('');
+    setMinViewsThreshold('');
+    setMaxBudget('');
     // Clear the file input by resetting its value
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -387,23 +419,38 @@ const ContentUploadForm = ({ onUpload }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
       <h2>Upload Content</h2>
-      <div>
+
+      {/* Basic Information */}
+      <div style={{ marginBottom: '15px' }}>
         <label>Title:</label>
-        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required />
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+        />
       </div>
-      <div>
+
+      <div style={{ marginBottom: '15px' }}>
         <label>Type:</label>
-        <select value={type} onChange={(e) => setType(e.target.value)}>
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+        >
           <option value="video">Video</option>
           <option value="audio">Audio</option>
           <option value="image">Image</option>
           <option value="article">Article</option>
         </select>
       </div>
+
+      {/* Content Input */}
       {type !== 'article' && (
-        <div>
+        <div style={{ marginBottom: '15px' }}>
           <label>File:</label>
           <input
             type="file"
@@ -411,20 +458,149 @@ const ContentUploadForm = ({ onUpload }) => {
             accept={type === 'video' ? 'video/*' : type === 'audio' ? 'audio/*' : 'image/*'}
             onChange={e => setFile(e.target.files[0])}
             required
+            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
           />
         </div>
       )}
+
       {type === 'article' && (
-        <div>
-          <label>Article Text:</label>
-          <textarea value={articleText} onChange={e => setArticleText(e.target.value)} required />
-        </div>
+        <>
+          <div style={{ marginBottom: '15px' }}>
+            <label>Article Text:</label>
+            <textarea
+              value={articleText}
+              onChange={e => setArticleText(e.target.value)}
+              required
+              rows="6"
+              style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+            />
+          </div>
+          <div style={{ marginBottom: '15px' }}>
+            <label>URL (optional):</label>
+            <input
+              type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://example.com"
+              style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+            />
+          </div>
+        </>
       )}
-      <div>
+
+      <div style={{ marginBottom: '15px' }}>
         <label>Description:</label>
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows="3"
+          style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+        />
       </div>
-      <button type="submit">Upload</button>
+
+      {/* Target Platforms */}
+      <div style={{ marginBottom: '15px' }}>
+        <label>Target Platforms:</label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '5px' }}>
+          {availablePlatforms.map(platform => (
+            <label key={platform} style={{ display: 'flex', alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                checked={targetPlatforms.includes(platform)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setTargetPlatforms([...targetPlatforms, platform]);
+                  } else {
+                    setTargetPlatforms(targetPlatforms.filter(p => p !== platform));
+                  }
+                }}
+              />
+              {platform.charAt(0).toUpperCase() + platform.slice(1)}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Promotion Settings */}
+      <div style={{ marginBottom: '15px' }}>
+        <label>Scheduled Promotion Time (optional):</label>
+        <input
+          type="datetime-local"
+          value={scheduledPromotionTime}
+          onChange={(e) => setScheduledPromotionTime(e.target.value)}
+          style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+        />
+      </div>
+
+      <div style={{ marginBottom: '15px' }}>
+        <label>Promotion Frequency:</label>
+        <select
+          value={promotionFrequency}
+          onChange={(e) => setPromotionFrequency(e.target.value)}
+          style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+        >
+          {frequencyOptions.map(freq => (
+            <option key={freq} value={freq}>
+              {freq.charAt(0).toUpperCase() + freq.slice(1)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Monetization Settings */}
+      <div style={{ marginBottom: '15px' }}>
+        <label>Target RPM (optional):</label>
+        <input
+          type="number"
+          value={targetRpm}
+          onChange={(e) => setTargetRpm(e.target.value)}
+          placeholder="e.g., 5.00"
+          step="0.01"
+          min="0"
+          style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+        />
+      </div>
+
+      <div style={{ marginBottom: '15px' }}>
+        <label>Minimum Views Threshold (optional):</label>
+        <input
+          type="number"
+          value={minViewsThreshold}
+          onChange={(e) => setMinViewsThreshold(e.target.value)}
+          placeholder="e.g., 1000"
+          min="0"
+          style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+        />
+      </div>
+
+      <div style={{ marginBottom: '15px' }}>
+        <label>Maximum Budget (optional):</label>
+        <input
+          type="number"
+          value={maxBudget}
+          onChange={(e) => setMaxBudget(e.target.value)}
+          placeholder="e.g., 100.00"
+          step="0.01"
+          min="0"
+          style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+        />
+      </div>
+
+      <button
+        type="submit"
+        style={{
+          width: '100%',
+          padding: '12px',
+          backgroundColor: '#1976d2',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          fontSize: '16px'
+        }}
+      >
+        Upload Content
+      </button>
     </form>
   );
 };

@@ -1,0 +1,14 @@
+.App {
+  text-align: center;
+  margin-top: 40px;
+}
+
+.App h1 {
+  color: #1976d2;
+  font-size: 2.5rem;
+}
+
+.App p {
+  color: #333;
+  font-size: 1.2rem;
+}
