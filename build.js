@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 // Create dist directory if it doesn't exist
 if (!fs.existsSync('dist')) {
@@ -53,6 +54,16 @@ if (fs.existsSync('.env')) {
   console.log('Copied .env to dist/');
 } else {
   console.log('.env not found, skipping');
+}
+
+// Build frontend with webpack
+console.log('Building frontend with webpack...');
+try {
+  execSync('npx webpack --config webpack.config.js --mode production', { stdio: 'inherit' });
+  console.log('Frontend build completed successfully.');
+} catch (error) {
+  console.error('Frontend build failed:', error);
+  process.exit(1);
 }
 
 console.log('Build completed successfully!');
