@@ -136,6 +136,29 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Test endpoint for FormData debugging
+router.post('/upload-debug', (req, res) => {
+  console.log('=== FORM DATA DEBUG ===');
+  console.log('Request headers:', req.headers);
+  console.log('Content-Type:', req.headers['content-type']);
+  console.log('Raw body:', req.body);
+  console.log('Files:', req.files);
+  console.log('File:', req.file);
+  console.log('Body keys:', Object.keys(req.body || {}));
+
+  res.json({
+    message: 'Debug info logged',
+    contentType: req.headers['content-type'],
+    hasFile: !!req.file,
+    bodyKeys: Object.keys(req.body || {}),
+    fileInfo: req.file ? {
+      name: req.file.originalname,
+      size: req.file.size,
+      type: req.file.mimetype
+    } : null
+  });
+});
+
 // Test endpoint without authentication for debugging - saves to Firebase
 router.post('/upload-test', sanitizeInput, validateContentData, async (req, res) => {
   try {

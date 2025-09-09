@@ -144,7 +144,20 @@ function App() {
         }
       }
 
-      console.log('Sending request to backend...');
+      // First, test with debug endpoint to see what we're sending
+      console.log('🔍 Testing with debug endpoint first...');
+      const debugRes = await fetch('https://autopromote.onrender.com/api/content/upload-debug', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${user.token}`,
+        },
+        body: formData,
+      });
+
+      const debugData = await debugRes.json();
+      console.log('🔍 Debug endpoint response:', debugData);
+
+      console.log('Sending request to main upload endpoint...');
       const res = await fetch('https://autopromote.onrender.com/api/content/upload', {
         method: 'POST',
         headers: {
