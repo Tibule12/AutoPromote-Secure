@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
 function App() {
@@ -355,6 +355,7 @@ const ContentUploadForm = ({ onUpload }) => {
   const [file, setFile] = useState(null);
   const [description, setDescription] = useState('');
   const [articleText, setArticleText] = useState('');
+  const fileInputRef = useRef(null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -368,10 +369,15 @@ const ContentUploadForm = ({ onUpload }) => {
       // Pass the file object; the parent component will handle FormData creation
       onUpload({ title, type, description, file });
     }
+    // Clear form fields
     setTitle('');
     setFile(null);
     setDescription('');
     setArticleText('');
+    // Clear the file input by resetting its value
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -393,7 +399,13 @@ const ContentUploadForm = ({ onUpload }) => {
       {type !== 'article' && (
         <div>
           <label>File:</label>
-          <input type="file" accept={type === 'video' ? 'video/*' : type === 'audio' ? 'audio/*' : 'image/*'} onChange={e => setFile(e.target.files[0])} required />
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept={type === 'video' ? 'video/*' : type === 'audio' ? 'audio/*' : 'image/*'}
+            onChange={e => setFile(e.target.files[0])}
+            required
+          />
         </div>
       )}
       {type === 'article' && (
